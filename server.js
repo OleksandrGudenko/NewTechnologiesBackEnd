@@ -37,7 +37,7 @@ app.get('/chats', (req, res) => {
 	
 	db.collection('Chats').findOne({"chatName": chatName}, function(err, result) {
 		if(err || result == null) {
-			db.collection('Chats').insert({"chatName": chatName, "displayNames": [displayName], "isPublic": isPublic}, function(err, insertResult) {
+			db.collection('Chats').insertOne({"chatName": chatName, "displayNames": [displayName], "isPublic": isPublic}, function(err, insertResult) {
 				if(!err){ 
 					res.send(insertResult);
 				}
@@ -77,7 +77,7 @@ app.get('/chats', (req, res) => {
 
 })
 .get('/messages', (req, res) => {
-    let reqchat = req.query.chat;
+    let reqchat = req.body.chat;
 
     if (reqchat != null) {
         db.collection('Messages').find({chat : reqchat }).toArray(function(err, results) {
@@ -91,42 +91,18 @@ app.get('/chats', (req, res) => {
 
 })
 .post('/messages', (req, res) => {
-	let chat = req.query.chat;
-	let displayName = req.query.displayName;
+	let chat = req.body.chat;
+	let displayName = req.body.displayName;
 	let message = req.body.message;
-	
-
-	db.collection('Chats').findOne({"chatName": chat}, function(err, findRes) {		
-		let BreakException = {};
 		
-		if (findRes.isPublic != true) {
-			try {
-				findRes.displayNames.forEach( function(element) {
-					if( element == displayName ) {
-						db.collection('Messages').insertOne({"chat": chat, "displayName": displayName, "message": message}, function(err, insertRes) {
-							if(err) {
-								res.send(err)
-								console.log(err)
-
-							} else {
-								res.send(insertRes.message)
-							}
-						})
-						throw BreakException;
-					}
-				})
-			} catch (e) {
-				if (e != BreakException) res.send("ServerError, message not sent.")
+	db.collection('Chats').findOne({"chatName": chat}, function(err, findRes) {		
+		db.collection('Messages').insertOne({"chat": chat, "displayName": displayName, "message": message}, function(err, insertRes) {
+			if(err) {
+				res.send(err)
+			} else {
+				res.send(insertRes.message)
 			}
-		} else {
-			db.collection('Messages').insertOne({"chat": chat, "displayName": displayName, "message": message}, function(err, insertRes) {
-				if(err) {
-					res.send(err)
-				} else {
-					res.send(insertRes.message)
-				}
-			})	
-		} 
+		})
 	})
 })
 
