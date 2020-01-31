@@ -25,7 +25,7 @@ MongoClient.connect(url, (err, client) => {
 
 
    
-app.get('/groups', (req, res) => {
+app.get('/chats', (req, res) => {
     var cursor = db.collection('Groups').find().toArray(function(err, results) {
        res.send(results)
        })
@@ -37,9 +37,19 @@ app.get('/groups', (req, res) => {
        })
 })
 .get('/messages', (req, res) => {
-    var cursor = db.collection('Messages').find().toArray(function(err, results) {
-       res.send(results)
-       })
+    var reqchat = req.query.chat;
+    console.log(reqchat)
+    if (reqchat != null) {
+        var cursor = db.collection('Messages').find({chat : reqchat }).toArray(function(err, results) {
+            res.send(results)
+
+            })
+    } else {
+        var cursor = db.collection('Messages').find({}).toArray(function(err, results) {
+            res.send(results)
+            })
+    }
+
 })
 
 
