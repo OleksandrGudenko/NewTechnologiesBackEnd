@@ -25,6 +25,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 // API end points starts here 
 
 app.get('/chats', (req, res) => {
+	
     db.collection('Chats').find().toArray(function(err, results) {
        res.send(results);
     })
@@ -77,7 +78,7 @@ app.get('/chats', (req, res) => {
 
 })
 .get('/messages', (req, res) => {
-    let reqchat = req.body.chat;
+    let reqchat = req.query.chat;
 
     if (reqchat != null) {
         db.collection('Messages').find({chat : reqchat }).toArray(function(err, results) {
