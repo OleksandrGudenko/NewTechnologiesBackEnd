@@ -27,7 +27,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
 app.get('/chats', (req, res) => {
     db.collection('Chats').find().toArray(function(err, result) {
-		console.log("GET/CHATS")
+		console.log("GET/CHATS", "|", new Date())
 
 		if(err){
 			res.send(err)
@@ -42,7 +42,7 @@ app.get('/chats', (req, res) => {
 	let displayName = req.body.displayName;
 	let isPublic = req.body.isPublic;
 	
-	console.log("POST/CHATS", chatName, displayName, isPublic)
+	console.log("POST/CHATS", chatName, displayName, isPublic, "|", new Date())
 	
 	db.collection('Chats').findOne({"chatName": chatName}, function(err, result) {
 		if(err || result == null) {
@@ -61,7 +61,7 @@ app.get('/chats', (req, res) => {
 })
 .get('/displaynames', (req, res) => {
     db.collection('DisplayNames').find().toArray(function(err, result) {
-		console.log("GET/DISPLAYNAMES")
+		console.log("GET/DISPLAYNAMES", "|", new Date())
 
 		if(err){
 			res.send(err)
@@ -74,7 +74,7 @@ app.get('/chats', (req, res) => {
 	let displayName = req.body.displayName;
 	let publicChats = [ "Politics", "Religion", "Cars", "Pro Vegan", "Art", "Technology", "Android vs IOS", "PC vs Consoles", "Gamers" ];
 	
-	console.log("POST/DISPLAYNAMES", displayName, new Date())
+	console.log("POST/DISPLAYNAMES", displayName, "|", new Date())
 	
 	db.collection('DisplayNames').find({"displayName" : displayName}).toArray( function(err, result) {
 		if(result.length == 0){
@@ -94,7 +94,7 @@ app.get('/chats', (req, res) => {
 })
 .get('/messages', (req, res) => {
     let reqchat = req.query.chat;
-	console.log("GET/MESSAGES")
+	console.log("GET/MESSAGES", "|", new Date())
 
     if (reqchat != null) {
         db.collection('Messages').find({chat : reqchat }).toArray(function(err, result) {
@@ -119,7 +119,7 @@ app.get('/chats', (req, res) => {
 	let displayName = req.body.displayName;
 	let message = req.body.message;
 	
-	console.log("POST/MESSAGES",chat, displayName, message, new Date())	
+	console.log("POST/MESSAGES",chat, displayName, message, "|", new Date())	
 	db.collection('Messages').insertOne({"chat": chat, "displayName": displayName, "message": message, "timeStamp": new Date()}, function(err, insertRes) {
 		if(err) {
 			res.send(err)
