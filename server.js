@@ -46,7 +46,7 @@ app.get('/chats', (req, res) => {
 	
 	db.collection('Chats').findOne({"chatName": chatName}, function(err, result) {
 		if(err || result == null) {
-			db.collection('Chats').insertOne({"chatName": chatName, "displayNames": [displayName], "isPublic": isPublic}, function(err, insertResult) {
+			db.collection('Chats').insertOne({"chatName": chatName, "displayNames": [displayName], "isPublic": isPublic, "latestMessage": ""}, function(err, insertResult) {
 				if(!err){ 
 					res.send(insertResult);
 				}
@@ -119,14 +119,26 @@ app.get('/chats', (req, res) => {
 	let displayName = req.body.displayName;
 	let message = req.body.message;
 	
-	console.log("POST/MESSAGES",chat, displayName, message, "|", new Date())	
-	db.collection('Messages').insertOne({"chat": chat, "displayName": displayName, "message": message, "timeStamp": new Date()}, function(err, insertRes) {
-		if(err) {
-			res.send(err)
-		} else {
-			res.send(insertRes.message)
-		}
-	})
+	console.log("POST/MESSAGES",chat, displayName, message, "|", new Date())
+	
+	db.collection('Chats').find({"chatName": chat}).toArray( function(err, findRes) {		
+		console.log(findRes)
+		let chatId = findRes[0]._id
+
+		db.collection('Messages').insertOne({"chat": chat, "displayName": displayName, "message": message, "timeStamp": new Date()}, function(err, insertRes) {
+			if(err) {
+				res.send(err)
+			} else {
+				db.collection('Chats').updateOne({"_id": chatId}, {$set: {"latestMessage": message}}, function (err, updateRes) {
+					if(err) {
+						res.send(err)
+					} else {
+						res.send(updateRes)
+					}
+				})
+			}
+		})
+	})	
 })
 
 
