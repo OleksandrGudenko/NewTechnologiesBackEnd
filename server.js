@@ -40,14 +40,22 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 		
 		
 		// Register new/resuse old DisplayName
-		socket.on('displayNameRequest', ({displayName}) => {
-			console.log(displayName);
+		socket.on('submitNameRequest', ({displayName}) => {
+			let d = new Date()
+			const date = d.getDate()
+			const month = d.getMonth() + 1
+			const year = d.getFullYear()
+			const hours = d.getHours()
+			const minutes = d.getMinutes()
+			const seconds = d.getSeconds()
+			
+			console.log("submitNameRequest", "|", date + "-" + month + "-" + year, hours + ":" + minutes + ":" + seconds);
+
+			if(displayName != '' && displayName != null) {
 				db.collection('DisplayNames').find({displayName}).toArray(function(err, result) {
-					console.log(`SOCKET GET DISPLAYNAME '${displayName}'`, "|", new Date())
-					console.log(result)
-					
-					let _id = result[0]._id;
-					
+					console.log(`SOCKET GET DISPLAYNAME '${displayName}'`)
+					console.log("db res: " + result[0])	
+											
 					if(err){
 						console.log(err.toString());
 						
@@ -55,36 +63,58 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 						if (result[0].inUse) {
 							console.log("Name is in use")
 
-							socket.emit('nameRequestResponse', {response:'Name is in use.'});
+							socket.emit('submitNameRequestResponse', {response: false, reason: 'Name is in use.'});
 
 						} else {
 							console.log("name exist but is free to use")
-
-							delete result[0]['_id']
-							result[0].inUse = false;
 														
-							db.collection('DisplayNames').updateOne({_id: ObjectId(_id)}, result[0]);
-							socket.emit('nameRequestResponse', {response:'Name exist but is free to use.'});
+							db.collection('DisplayNames').updateOne({_id: result[0]._id}, {$set: {inUse: true}}, function (err, result) {
+								
+								if(err) {
+									socket.emit('submitNameRequestResponse', {response: false, reason: 'DataBase Error when Updating.'});
+
+								} else {
+									socket.emit('submitNameRequestResponse', {response: true, reason: 'Old name claimed successfully.', name: displayName});
+								}
+							});
 
 						} 
 					} else {
 						console.log("no such name in db")
-						socket.emit('nameRequestResponse', {response:'No such name in DB.'});
+						db.collection('DisplayNames').insertOne({"displayName" : displayName, "chats" : publicChats, "inUse" : true}, function(err, results) {
+							if(err){ 
+								socket.emit('submitNameRequestResponse', {response: false, reason: 'DataBase Error.'})
+							}
+							else {
+								socket.emit('submitNameRequestResponse', {response: true, reason: 'New name claimed.', name: displayName})
+
+							}
+						});					
 						
 					}
-					
+				
 				});
+			}
 		});
 		
 		
 		// change name when user requests to
 		socket.on('changeNameRequest', ({newDisplayName, oldDisplayName}) => {
-			console.log("changeNameRequest")
+			let d = new Date()
+			const date = d.getDate()
+			const month = d.getMonth() + 1
+			const year = d.getFullYear()
+			const hours = d.getHours()
+			const minutes = d.getMinutes()
+			const seconds = d.getSeconds()
+			
+			console.log("114 changeNameRequest", "|", date + "-" + month + "-" + year, hours + ":" + minutes + ":" + seconds);
+			
 			if(newDisplayName != oldDisplayName && newDisplayName != '' && newDisplayName != null) {
-				let oldName = []
+				let oldName;
 				db.collection('DisplayNames').find({"displayName": oldDisplayName}).toArray((err, res) => {
 					
-					console.log(res)
+					console.log("oldName: " + res)
 					if(err) {
 						console.log(err)
 					} else {
@@ -99,24 +129,31 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 						return
 						
 					} else if (result.length != 0) {
-						let _id = result[0]._id;
 
 						if (result[0].inUse) {
 							console.log("Name is in use")
 							
-							socket.emit('changeNameRequestResponse', {response:'Booked'});
+							socket.emit('changeNameRequestResponse', {response: false, reason: 'Name is claimed.'});
 							return
 
 						} else {
 							console.log("name exist but is free to use")
 														
-							db.collection('DisplayNames').updateOne({_id: ObjectId(_id)}, {$set: { inUse: true }}, function (err, res) {
+							db.collection('DisplayNames').updateOne({_id: result[0]._id}, {$set: { inUse: true }}, function (err, res) {
 								if (err) {
 									console.log(err)
-									socket.emit('changeNameRequestResponse', {response:'Internal Error'});
+									socket.emit('changeNameRequestResponse', {response: false, reason: 'DataBase Error.'});
 
 								} else {
-									socket.emit('changeNameRequestResponse', {response:'Reused'});
+									db.collection('DisplayNames').updateOne({_id: oldName[0]._id}, {$set: { inUse: false }}, function (err, res) {
+										if (err) {
+											console.log(err)
+
+										} else {
+											socket.emit('changeNameRequestResponse', {response: true, reason: 'Old name claimed.', name: newDisplayName});
+
+										}
+									})
 								}
 							});
 
@@ -125,36 +162,57 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 						db.collection('DisplayNames').insertOne({"displayName" : newDisplayName, "chats" : publicChats, "inUse" : true}, function(err, results) {
 							if(err){ 
 								console.log(err);
+								socket.emit('changeNameRequestResponse', {response: false, reason: 'DataBase Error.'});
+
 							}
 							else {
-							socket.emit('changeNameRequestResponse', {response: 'New'})
+								db.collection('DisplayNames').updateOne({_id: oldName[0]._id}, {$set: { inUse: false }}, function (err, res) {
+									if (err) {
+										console.log(err)
 
-							  if (oldName.length == 0) { return } else {
-									db.collection('DisplayNames').updateOne({_id: ObjectId(oldName._id)}, {$set: { inUse: false }}, function (err, res) {
-										if (err) {
-											console.log(err)
-										}
-									})
-								}
+									} else {
+										socket.emit('changeNameRequestResponse', {response: true, reason: 'New Name Claimed.', name: newDisplayName})
+
+									}
+								})
+								
 							}
 						})					
 					}				
 				});
-			} else { socket.emit('changeNameRequestResponse', {response: 'New and Old names are equal.'}) } 
+			} else { socket.emit('changeNameRequestResponse', {response: false, reason: 'New and Old names are equal.'}) } 
 		});
 			
-		socket.on('loginRequestBackEND', ({displayName}) => {
+		socket.on('loginRequest', ({displayName}) => {
+			let d = new Date()
+			const date = d.getDate()
+			const month = d.getMonth() + 1
+			const year = d.getFullYear()
+			const hours = d.getHours()
+			const minutes = d.getMinutes()
+			const seconds = d.getSeconds()
+			
+			console.log("loginRequest", "|", date + "-" + month + "-" + year, hours + ":" + minutes + ":" + seconds);
+
 			db.collection('DisplayNames').find({displayName}).toArray(function(err, result) {
-					console.log(`SOCKET GET LOGIN AS '${displayName}' REQUEST`, "|", new Date())
-					console.log(result)
+				console.log(`SOCKET GET LOGIN AS '${displayName}' REQUEST`)
+				
+				if(err){
+					console.log(err.toString());
+					socket.emit('loginRequstResponse', { response: 'DataBase Error.'})
 					
-					if(err){
-						console.log(err.toString());
-						
-					} else {
-						socket.emit('loginRequestClient', {response: {displayName: result}});
-						
-					} 
+				} else if(!Array.isArray(result) || result.length == 0) {
+					socket.emit('loginRequestResponse', {response:  false, reason: 'Your name is not in database.'});
+	
+				} else {
+					socket.emit('loginRequestResponse', {response: true, name: result});
+					console.log("result inside socket emit", result);
+					db.collection('DisplayNames').updateOne({_id: result[0]._id}, {$set: { inUse: true }}, function (err, res) {
+						if (err) {
+							console.log(err)
+						} 
+					})
+				}
 			});
 		});
 			
