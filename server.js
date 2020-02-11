@@ -68,26 +68,35 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 						} else {
 							console.log("name exist but is free to use")
 														
-							db.collection('DisplayNames').updateOne({_id: result[0]._id}, {$set: {inUse: true}}, function (err, result) {
+							db.collection('DisplayNames').updateOne({_id: result[0]._id}, {$set: {inUse: true}}, function (err, res) {
 								
 								if(err) {
 									socket.emit('submitNameRequestResponse', {response: false, reason: 'DataBase Error when Updating.'});
 
 								} else {
-									socket.emit('submitNameRequestResponse', {response: true, reason: 'Old name claimed successfully.', name: displayName});
+									db.collection('DisplayNames').find({_id:result[0]._id }).toArray((err, resName) => {
+										if (err) {
+											console.log(err);
+										} else {
+											socket.emit('submitNameRequestResponse', {response: true, reason: 'Old name claimed successfully.', name: resName});
+											console.log(resName)
+
+										}
+									})
 								}
 							});
 
 						} 
 					} else {
 						console.log("no such name in db")
-						db.collection('DisplayNames').insertOne({"displayName" : displayName, "chats" : publicChats, "inUse" : true}, function(err, results) {
+						db.collection('DisplayNames').insertOne({"displayName" : displayName, "chats" : publicChats, "inUse" : true}, function(err, result) {
 							if(err){ 
 								socket.emit('submitNameRequestResponse', {response: false, reason: 'DataBase Error.'})
 							}
 							else {
-								socket.emit('submitNameRequestResponse', {response: true, reason: 'New name claimed.', name: displayName})
-
+	
+											socket.emit('submitNameRequestResponse', {response: true, reason: 'New name claimed.', name: [result.ops[0]]});
+											console.log([result.ops[0]])
 							}
 						});					
 						
@@ -150,7 +159,15 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 											console.log(err)
 
 										} else {
-											socket.emit('changeNameRequestResponse', {response: true, reason: 'Name with history claimed.', name: newDisplayName});
+											db.collection('DisplayNames').find({_id:result[0]._id }).toArray((err, resName) => {
+												if (err) {
+													console.log(err);
+												} else {
+													socket.emit('changeNameRequestResponse', {response: true, reason: 'Name with history claimed.', name: resName});
+													console.log(resName)
+
+												}
+											})
 
 										}
 									})
@@ -159,7 +176,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
 						} 
 					} else {
-						db.collection('DisplayNames').insertOne({"displayName" : newDisplayName, "chats" : publicChats, "inUse" : true}, function(err, results) {
+						db.collection('DisplayNames').insertOne({"displayName" : newDisplayName, "chats" : publicChats, "inUse" : true}, function (err, results) {
 							if(err){ 
 								console.log(err);
 								socket.emit('changeNameRequestResponse', {response: false, reason: 'DataBase Error.'});
@@ -171,13 +188,14 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 										console.log(err)
 
 									} else {
-										socket.emit('changeNameRequestResponse', {response: true, reason: 'Name without history claimed.', name: newDisplayName})
-
+										socket.emit('changeNameRequestResponse', {response: true, reason: 'Name without history claimed.', name: [results.ops[0]]})
+										console.log([results.ops[0]])
 									}
 								})
 								
 							}
-						})					
+						}) 
+			
 					}				
 				});
 			} else { socket.emit('changeNameRequestResponse', {response: false, reason: 'Name is too short or New and Old names are equal.'}) } 
