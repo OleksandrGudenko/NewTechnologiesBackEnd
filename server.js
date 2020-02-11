@@ -51,7 +51,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			
 			console.log("submitNameRequest", "|", date + "-" + month + "-" + year, hours + ":" + minutes + ":" + seconds);
 
-			if(displayName != '' && displayName != null) {
+			if(displayName.length > 2 && displayName != null) {
 				db.collection('DisplayNames').find({displayName}).toArray(function(err, result) {
 					console.log(`SOCKET GET DISPLAYNAME '${displayName}'`)
 					console.log("db res: " + result[0])	
@@ -94,7 +94,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 					}
 				
 				});
-			}
+			} else { socket.emit('changeNameRequestResponse', {response: false, reason: 'Name is too short.'}) }
 		});
 		
 		
@@ -110,7 +110,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			
 			console.log("114 changeNameRequest", "|", date + "-" + month + "-" + year, hours + ":" + minutes + ":" + seconds);
 			
-			if(newDisplayName != oldDisplayName && newDisplayName != '' && newDisplayName != null) {
+			if(newDisplayName != oldDisplayName && newDisplayName.length > 2 && newDisplayName != null) {
 				let oldName;
 				db.collection('DisplayNames').find({"displayName": oldDisplayName}).toArray((err, res) => {
 					
@@ -133,7 +133,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 						if (result[0].inUse) {
 							console.log("Name is in use")
 							
-							socket.emit('changeNameRequestResponse', {response: false, reason: 'Name is claimed.'});
+							socket.emit('changeNameRequestResponse', {response: false, reason: 'Name is already in use.'});
 							return
 
 						} else {
@@ -150,7 +150,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 											console.log(err)
 
 										} else {
-											socket.emit('changeNameRequestResponse', {response: true, reason: 'Old name claimed.', name: newDisplayName});
+											socket.emit('changeNameRequestResponse', {response: true, reason: 'Name with history claimed.', name: newDisplayName});
 
 										}
 									})
@@ -171,7 +171,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 										console.log(err)
 
 									} else {
-										socket.emit('changeNameRequestResponse', {response: true, reason: 'New Name Claimed.', name: newDisplayName})
+										socket.emit('changeNameRequestResponse', {response: true, reason: 'Name without history claimed.', name: newDisplayName})
 
 									}
 								})
@@ -180,7 +180,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 						})					
 					}				
 				});
-			} else { socket.emit('changeNameRequestResponse', {response: false, reason: 'New and Old names are equal.'}) } 
+			} else { socket.emit('changeNameRequestResponse', {response: false, reason: 'Name is too short or New and Old names are equal.'}) } 
 		});
 			
 		socket.on('loginRequest', ({displayName}) => {
