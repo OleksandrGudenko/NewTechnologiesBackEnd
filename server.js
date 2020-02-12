@@ -234,7 +234,32 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			});
 		});
 			
-		
+		socket.on('chatRequest', ({chats}) => {
+			let responseChats = new Array ()
+			for(let i=0; i < chats.length; i++){
+				db.collection('Messages').find({chat: chats[i]}, {'limit': 1, 'sort': {$natural:-1}}).toArray((err, res) => {
+					if(err){
+						console.log(err)
+					} else {
+						console.log(res.length)
+						if (Array.isArray(res) && res.length == 1) {
+							responseChats.push(res[0]);
+						}
+						if(i+1 == chats.length) done(responseChats);
+
+					}
+				})
+			}
+			
+			function done (chats) {
+				console.log("outside for loop: " + chats.length)
+				socket.emit('chatRequestResponse', {chats})
+			}
+
+		});
+
+
+
 		socket.on('sendMessage', (message, callback) => {
 			const user = getUser(socket.id);
 			
