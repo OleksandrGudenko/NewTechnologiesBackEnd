@@ -234,7 +234,8 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			});
 		});
 			
-		socket.on('chatRequest', ({chats}) => {
+		socket.on('chatRequest', async ({chats}) => {
+			let start = 1
 			let responseChats = new Array ()
 			for(let i=0; i < chats.length; i++){
 				db.collection('Messages').find({chat: chats[i]}, {'limit': 1, 'sort': {$natural:-1}}).toArray((err, res) => {
@@ -242,10 +243,10 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 						console.log(err)
 					} else {
 						if (Array.isArray(res) && res.length == 1) {
-							responseChats.push(res[0]);
+							responseChats.push(res[0]); 
 						}
-						if(i+1 == chats.length) done(responseChats);
-
+						if(start == chats.length) {done(responseChats); return;}
+						start ++
 					}
 				})
 			}
