@@ -6,7 +6,7 @@ const app = express();
 const server = require("http").createServer(app);
 const io = require("socket.io")(server);
 const port = 5000;
-//const { addUser, removeUser, getUser, getUsersInRoom } = require('./users')
+// const { addUser, removeUser, getUser, getUsersInRoom } = require('./users')
 const publicChats = [ "Politics", "Religion", "Cars", "Pro Vegan", "Art", "Technology", "Android vs IOS", "PC vs Consoles", "Gamers" ];
 
 
@@ -15,6 +15,8 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 
+// this will count all connections
+const connections = new Set();
 
 const MongoClient = require('mongodb').MongoClient;
 const url = 'mongodb://127.0.0.1:27017';
@@ -27,18 +29,8 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
     
 	io.on("connection", (socket) => {
 		console.log("a user has connected!! :D")
+		connections.add(socket);
 	
-	/*
-		socket.on('join', (callback) => {
-		
-			socket.emit('message', { user: 'ChatApp', text: `${user.displayName}, welcome to ${user.chatName}`})
-			socket.broadcast.to(user.chatName).emit('message', { user: 'ChatName', text: `${user.displayName} is online` })
-			socket.join(user.chatName);
-		
-			callback();
-		});*/	
-		
-		
 		// Register new/resuse old DisplayName
 		socket.on('submitNameRequest', ({displayName}) => {
 			let d = new Date()
@@ -234,16 +226,32 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			});
 		});
 			
-		socket.on('chatRequest', async ({chats}) => {
+		socket.on('chatRequest', ({displayName, chats}) => {
+			console.log(`THIS IS DISPLAYNAME ${displayName} AND THIS IS CHATS ${chats}`)
 			let start = 1
 			let responseChats = new Array ()
 			for(let i=0; i < chats.length; i++){
-				db.collection('Messages').find({chat: chats[i]}, {'limit': 1, 'sort': {$natural:-1}}).toArray((err, res) => {
+				// this is a code to get only the latest document from collection
+				// db.collection('Messages').find({chat: chats[i]}, {'limit': 1, 'sort': {$natural:-1}}).toArray((err, res) => {
+				// 	if(err){
+				// 		console.log(err)
+				// 	} else {
+				// 		if (Array.isArray(res) && res.length == 1) {
+				// 			responseChats.push(res[0]); 
+				// 		}
+				// 		if(start == chats.length) {done(responseChats); return;}
+				// 		start ++
+				// 	}
+				// })
+
+				db.collection('Messages').find({chat: chats[i]}).toArray((err, res) => {
 					if(err){
 						console.log(err)
 					} else {
-						if (Array.isArray(res) && res.length == 1) {
-							responseChats.push(res[0]); 
+						if (Array.isArray(res) && res.length >= 1) {
+
+							responseChats.push(res);
+							console.log("this is in for loop",res) 
 						}
 						if(start == chats.length) {done(responseChats); return;}
 						start ++
@@ -252,40 +260,58 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			}
 			
 			function done (chats) {
+				console.log(chats)
 				socket.emit('chatRequestResponse', {chats})
 			}
 
 		});
 
+		socket.on('sendMessage', ({displayName, chat, message, chats}, callback) => {
+			
+			console.log(displayName,chat,message)
 
+			db.collection('Messages').insertOne({displayName, chat, message, timeStamp: new Date()}, function (err, results) {
+				if(err){ 
+					console.log(err);
 
-		socket.on('getMessagesRequest', (chatRequest, callback) => {
-			// console.log(chatRequest)
-			db.collection('Messages').find({chat: chatRequest.chat}).toArray((err, res) => {
-				if (err) {
-					console.log(error);
-				} else {
-					socket.emit('getMessagesRequestResponse', {response: res})
 				}
-			})
-		});
+				else {
+					let start = 1
+					let responseChats = new Array ()
+					for(let i=0; i < chats.length; i++){		
+						db.collection('Messages').find({chat: chats[i]}).toArray((err, res) => {
+							if(err){
+								console.log(err)
+							} else {
+								if (Array.isArray(res) && res.length >= 1) {
+		
+									responseChats.push(res);
+									console.log("this is in for loop",res) 
+								}
+								if(start == chats.length) {done(responseChats); return;}
+								start ++
+							}
+						})
+					}
+					
+					function done (chats) {
+						console.log("sendMessage chats: ",chats)
+						socket.emit('chatRequestResponse', {chats})
+					}
+				}
+			}) 
 
-		socket.on('sendMessage', (message, callback) => {
-			const user = getUser(socket.id);
-			
-			io.to(user.chatName).emit('message', { user: user.displayName, text: message })
-			
-			callback();
 		});
 		
 		
 		socket.on('disconnect', () => {
+			connections.delete(socket);
 			console.log('a user has dissconected :(')
 		});
 	});
 
 
-	server.listen(port, () => console.log("server is running on port " + port))
+	server.listen(port, () => console.log(`Server has started on port ${port}`))
 
 })
 
