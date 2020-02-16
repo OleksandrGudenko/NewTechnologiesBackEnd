@@ -226,10 +226,15 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			});
 		});
 			
+
+
+	  
+
 		socket.on('chatRequest', ({displayName, chats}) => {
-			console.log(`THIS IS DISPLAYNAME ${displayName} AND THIS IS CHATS ${chats}`)
+			console.log(`THIS IS chatRequest: DISPLAYNAME ${displayName} AND THIS IS CHATS ${chats}`)
 			let start = 1
 			let responseChats = new Array ()
+
 			for(let i=0; i < chats.length; i++){
 				// this is a code to get only the latest document from collection
 				// db.collection('Messages').find({chat: chats[i]}, {'limit': 1, 'sort': {$natural:-1}}).toArray((err, res) => {
@@ -248,10 +253,18 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 					if(err){
 						console.log(err)
 					} else {
-						if (Array.isArray(res) && res.length >= 1) {
-
+						if (Array.isArray(res) && res.length != 0) {
+							console.log(res.length)
 							responseChats.push(res);
-							console.log("this is in for loop",res) 
+							
+						} else {
+							const noMessages = { 
+								displayName: 'Admin',
+								chat: chats[i],
+								message: 'No messages in this chat...',
+								timeStamp: new Date()						  
+							}
+							responseChats.push([noMessages])
 						}
 						if(start == chats.length) {done(responseChats); return;}
 						start ++
@@ -260,7 +273,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			}
 			
 			function done (chats) {
-				console.log(chats)
+				console.log("chatRequest: ", chats)
 				socket.emit('chatRequestResponse', {chats})
 			}
 
@@ -268,7 +281,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
 		socket.on('sendMessage', ({displayName, chat, message, chats}, callback) => {
 			
-			console.log(displayName,chat,message)
+			console.log('socket sendMessage')
 
 			db.collection('Messages').insertOne({displayName, chat, message, timeStamp: new Date()}, function (err, results) {
 				if(err){ 
@@ -283,10 +296,18 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 							if(err){
 								console.log(err)
 							} else {
-								if (Array.isArray(res) && res.length >= 1) {
-		
+								if (Array.isArray(res) && res.length != 0) {
+									console.log(res.length)
 									responseChats.push(res);
-									console.log("this is in for loop",res) 
+									
+								} else {
+									const noMessages = { 
+										displayName: 'Admin',
+										chat: chats[i],
+										message: 'No messages in this chat...',
+										timeStamp: new Date()						  
+									}
+									responseChats.push([noMessages])
 								}
 								if(start == chats.length) {done(responseChats); return;}
 								start ++
@@ -295,8 +316,8 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 					}
 					
 					function done (chats) {
-						console.log("sendMessage chats: ",chats)
-						socket.emit('chatRequestResponse', {chats})
+						console.log("messages: ", chats)
+						io.sockets.emit('chatRequestResponse', {chats})
 					}
 				}
 			}) 
