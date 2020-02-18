@@ -2,12 +2,23 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 
+// const fs = require('fs');
+// const https = require('https');
+
+// const options = {
+// 	key: fs.readFileSync('./certs/key.txt'),
+// 	cert: fs.readFileSync('./certs/cert.txt'),
+//   };
+
 const app = express();
 const server = require("http").createServer(app);
+// const server = https.createServer(options, app );
 const io = require("socket.io")(server);
 const port = 5000;
 // const { addUser, removeUser, getUser, getUsersInRoom } = require('./users')
 const publicChats = [ "Politics", "Religion", "Cars", "Pro Vegan", "Art", "Technology", "Android vs IOS", "PC vs Consoles", "Gamers" ];
+
+// HTTPS certificates
 
 
 app.use(bodyParser.urlencoded({
@@ -216,7 +227,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 	
 				} else {
 					socket.emit('loginRequestResponse', {response: true, name: result});
-					console.log("result inside socket emit", result);
+					// console.log("result inside socket emit", result);
 					db.collection('DisplayNames').updateOne({_id: result[0]._id}, {$set: { inUse: true }}, function (err, res) {
 						if (err) {
 							console.log(err)
@@ -231,7 +242,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 	  
 
 		socket.on('chatRequest', ({displayName, chats}) => {
-			console.log(`THIS IS chatRequest: DISPLAYNAME ${displayName} AND THIS IS CHATS ${chats}`)
+			// console.log(`THIS IS chatRequest: DISPLAYNAME ${displayName} AND THIS IS CHATS ${chats}`)
 			let start = 1
 			let responseChats = new Array ()
 
@@ -249,12 +260,13 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 				// 	}
 				// })
 
+				// .sort({timeStamp: -1})
 				db.collection('Messages').find({chat: chats[i]}).toArray((err, res) => {
 					if(err){
 						console.log(err)
 					} else {
 						if (Array.isArray(res) && res.length != 0) {
-							console.log(res.length)
+							// console.log(res.length)
 							responseChats.push(res);
 							
 						} else {
@@ -262,7 +274,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 								displayName: 'Admin',
 								chat: chats[i],
 								message: 'No messages in this chat...',
-								timeStamp: new Date()						  
+								timeStamp: "2000-02-18T14:18:05.639Z"						  
 							}
 							responseChats.push([noMessages])
 						}
@@ -273,7 +285,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 			}
 			
 			function done (chats) {
-				console.log("chatRequest: ", chats)
+				// console.log("chatRequest: ", chats)
 				socket.emit('chatRequestResponse', {chats})
 			}
 
@@ -297,7 +309,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 								console.log(err)
 							} else {
 								if (Array.isArray(res) && res.length != 0) {
-									console.log(res.length)
+									// console.log(res.length)
 									responseChats.push(res);
 									
 								} else {
@@ -305,7 +317,8 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 										displayName: 'Admin',
 										chat: chats[i],
 										message: 'No messages in this chat...',
-										timeStamp: new Date()						  
+										timeStamp: ''
+																  
 									}
 									responseChats.push([noMessages])
 								}
