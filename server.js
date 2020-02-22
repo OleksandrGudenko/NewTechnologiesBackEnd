@@ -2,23 +2,25 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 
-// const fs = require('fs');
-// const https = require('https');
+const fs = require('fs');
+// const password = require('./certs/pass')
 
-// const options = {
-// 	key: fs.readFileSync('./certs/key.txt'),
-// 	cert: fs.readFileSync('./certs/cert.txt'),
-//   };
+// HTTPS certificates
+const options = {
+	cert: fs.readFileSync('./certs/ssl/server.crt'),
+	key: fs.readFileSync('./certs/ssl/server.key'),
+	// passphrase: password
+  };
 
 const app = express();
 const server = require("http").createServer(app);
-// const server = https.createServer(options, app );
+const serverHTTPS = require('https').createServer(options, app );
 const io = require("socket.io")(server);
 const port = 5000;
-// const { addUser, removeUser, getUser, getUsersInRoom } = require('./users')
+const portHTTPS = 5001;
 const publicChats = [ "Politics", "Religion", "Cars", "Pro Vegan", "Art", "Technology", "Android vs IOS", "PC vs Consoles", "Gamers" ];
+// const { addUser, removeUser, getUser, getUsersInRoom } = require('./users')
 
-// HTTPS certificates
 
 
 app.use(bodyParser.urlencoded({
@@ -345,7 +347,8 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 	});
 
 
-	server.listen(port, () => console.log(`Server has started on port ${port}`))
+	server.listen(port, () => console.log(`HTTP has started on port ${port}`));
+	serverHTTPS.listen(portHTTPS, () => console.log(`HTTPS has started on port ${portHTTPS}`))
 
 })
 

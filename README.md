@@ -3,13 +3,18 @@ Back-end for school project running NodeJS, Express, MongoDB hosted on a Raspber
 
 # How to:
 
+### Clone the repository
+```
+git clone https://github.com/OleksandrGudenko/NewTechnologiesBackEnd.git
+```
+
 ### Install node dependacies
 
 ```
 npm i
 ```
 
-### 
+### Run the application 
 ```
 node server.js
 ```
