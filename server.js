@@ -18,7 +18,7 @@ const serverHTTPS = require('https').createServer(options, app );
 const io = require("socket.io")(server);
 const port = 5000;
 const portHTTPS = 5001;
-const publicChats = [ "Politics", "Religion", "Cars", "Pro Vegan", "Art", "Technology", "Android vs IOS", "PC vs Consoles", "Gamers" ];
+const publicChats = ["DIN17SP", "Cars", "Art", "Technology", "Gaming"];
 // const { addUser, removeUser, getUser, getUsersInRoom } = require('./users')
 
 
@@ -275,7 +275,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 							const noMessages = { 
 								displayName: 'Admin',
 								chat: chats[i],
-								message: 'No messages in this chat...',
+								message: 'No messages in this chat.',
 								timeStamp: "2000-02-18T14:18:05.639Z"						  
 							}
 							responseChats.push([noMessages])
