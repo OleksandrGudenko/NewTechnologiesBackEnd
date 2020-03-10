@@ -6,15 +6,15 @@ const fs = require('fs');
 // const password = require('./certs/pass')
 
 // HTTPS certificates
-const options = {
-	cert: fs.readFileSync('./certs/ssl/server.crt'),
+/*const options = {
+	cert: fs.readFileSync('/home/ubuntu/Desktop/Git/NodeJS/Server-socket/NewTechProject/certs/ssl/server.crt'),
 	key: fs.readFileSync('./certs/ssl/server.key'),
 	// passphrase: password
   };
-
+*/
 const app = express();
 const server = require("http").createServer(app);
-const serverHTTPS = require('https').createServer(options, app );
+//const serverHTTPS = require('https').createServer(options, app );
 const io = require("socket.io")(server);
 const port = 5000;
 const portHTTPS = 5001;
@@ -319,7 +319,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 										displayName: 'Admin',
 										chat: chats[i],
 										message: 'No messages in this chat...',
-										timeStamp: ''
+										timeStamp: '2000-02-18T14:18:05.639Z'
 																  
 									}
 									responseChats.push([noMessages])
@@ -348,7 +348,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
 
 	server.listen(port, () => console.log(`HTTP has started on port ${port}`));
-	serverHTTPS.listen(portHTTPS, () => console.log(`HTTPS has started on port ${portHTTPS}`))
+//	serverHTTPS.listen(portHTTPS, () => console.log(`HTTPS has started on port ${portHTTPS}`))
 
 })
 
